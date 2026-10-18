@@ -1,5 +1,5 @@
 -- ==========================================
--- OPENCOMPUTERS FARMING SCRIPT (Z GEOLYZEREM)
+-- OPENCOMPUTERS FARMING SCRIPT (Z GEOLYZEREM I BEZPIECZNYM RUCHEM)
 -- ==========================================
 ---@diagnostic disable: need-check-nil, undefined-field
 
@@ -38,6 +38,15 @@ local function clearscreen(showHelp)
     term.setCursor(1, 1)
     if showHelp then
         io.write("Naciśnij Backspace, aby wyjść\n\n")
+    end
+end
+
+-- Bezpieczny ruch naprzód: jeśli robot zostanie zablokowany przez entity, ponawia próbę i usuwa przeszkode
+local function moveForward()
+    if not is_robot then return end
+    while not robot.forward() do
+        robot.swing() -- Atakuje/odgania entity stojące na drodze
+        os.sleep(0.2) -- Krótka pauza przed ponowną próbą
     end
 end
 
@@ -89,8 +98,7 @@ local function setup()
         end
     end
 
-    --print("Podaj rodzaj uprawy:")
-    cropType = "potato"--io.read()
+    cropType = "potato"
 
     return 1
 end
@@ -106,12 +114,12 @@ local function main()
         for x = 1, farmSize.x do
             for z = 1, farmSize.z do
                 
-                -- SPRADZANIE DOJRZAŁOŚCI I ZBIÓR ZA POMOCĄ GEOLYZERA
+                -- SPRAWDZANIE DOJRZAŁOŚCI I ZBIÓR ZA POMOCĄ GEOLYZERA
                 if geolyzer then
                     local blockInfo = geolyzer.analyze(sides.down)
                     
                     if blockInfo then
-                        -- Jeśli roślina jest w pełni dojrzała (np. age == 7 dla pszenicy/marchewek)
+                        -- Jeśli roślina jest w pełni dojrzała (np. age == 7 dla ziemniaków/pszenicy)
                         if blockInfo.properties and blockInfo.properties.age == 7 then
                             robot.swingDown() -- Ścina dojrzałą uprawę
                             if robot.count() > 0 then
@@ -123,10 +131,9 @@ local function main()
                                 robot.placeDown()
                             end
                         end
-                        -- Jeśli roślina jeszcze rośnie (age < 7), skrypt ją pomija i nic nie robi!
                     end
                 else
-                    -- Awaryjny fallback, gdyby jakimś cudem nie było geolyzera (stare zachowanie)
+                    -- Awaryjny fallback, gdyby jakimś cudem nie było geolyzera
                     if robot.detectDown() then
                         robot.swingDown()
                     end
@@ -135,9 +142,9 @@ local function main()
                     end
                 end
 
-                -- Ruch do przodu w obrębie rzędu
+                -- Ruch do przodu w obrębie rzędu (z zabezpieczeniem przed entity)
                 if z < farmSize.z then
-                    robot.forward()
+                    moveForward()
                 end
             end
 
@@ -145,11 +152,11 @@ local function main()
             if x < farmSize.x then
                 if x % 2 == 1 then
                     robot.turnRight()
-                    robot.forward()
+                    moveForward()
                     robot.turnRight()
                 else
                     robot.turnLeft()
-                    robot.forward()
+                    moveForward()
                     robot.turnLeft()
                 end
             end
@@ -160,17 +167,17 @@ local function main()
             robot.turnRight()
             robot.turnRight()
             for z = 2, farmSize.z do
-                robot.forward()
+                moveForward()
             end
             robot.turnRight()
             for x = 2, farmSize.x do
-                robot.forward()
+                moveForward()
             end
             robot.turnRight()
         else
             robot.turnRight()
             for x = 2, farmSize.x do
-                robot.forward()
+                moveForward()
             end
             robot.turnLeft()
         end
