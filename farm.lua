@@ -1,57 +1,55 @@
--- INITIALIZATION
--- VARIABLES
+-- ==========================================
+-- OPENCOMPUTERS FARMING SCRIPT
+-- ==========================================
+
+-- MODULES & DEPENDENCIES
 local component = require("component")
-local term  = require("term")
-local event = require("event")
-local os    = require("os")
-local sides = require("sides")
+local term      = require("term")
+local event     = require("event")
+local os        = require("os")
+local sides     = require("sides")
 
+-- ROBOT CHECK
 local is_robot = component.isAvailable("robot")
-local robot
-if is_robot then
-    robot = require("robot")
-end
+local robot = is_robot and require("robot") or nil
 
-local start = {
-    x = 0,
-    y = 0,
-    z = 0
-}
-
-local farmSize = {
-    x = 1,
-    z = 1
-}
-
+-- VARIABLES & CONFIGURATION
+local start = { x = 0, y = 0, z = 0 }
+local farmSize = { x = 1, z = 1 }
 local cropType = ""
 
-local UP_ARROW      = 200
-local DOWN_ARROW    = 208
-local LEFT_ARROW    = 203
-local RIGHT_ARROW   = 205
-local ENTER         = 28
-local BACKSPACE     = 14
+-- KEYCODES
+local UP_ARROW    = 200
+local DOWN_ARROW  = 208
+local LEFT_ARROW  = 203
+local RIGHT_ARROW = 205
+local ENTER       = 28
+local BACKSPACE   = 14
 
+-- ==========================================
 -- FUNCTIONS
-local function clearscreen(h)
+-- ==========================================
+
+local function clearscreen(showHelp)
     term.clear()
     term.setCursor(1, 1)
-    if h then
-        io.write("Backspace by wyjść\n\n")
+    if showHelp then
+        io.write("Naciśnij Backspace, aby wyjść\n\n")
     end
 end
 
 local function renderFarm()
     for row = 1, farmSize.x do
-        if (row == farmSize.x) then
+        if row == farmSize.x then
             io.write("[S")
         else
             io.write("[□")
         end
-        for col = 1, farmSize.z-1 do
+        for col = 1, farmSize.z - 1 do
             io.write("□")
         end
         io.write("]")
+        
         if row == 1 then
             io.write("    " .. farmSize.x .. "x" .. farmSize.z)
         end
@@ -61,15 +59,14 @@ end
 
 local function setup()
     while true do
-        -- RENDER
         clearscreen(true)
         print("Podaj rozmiar farmy (x↑, z↑):")
         renderFarm()
-        -- SCALING FARM BY ARROW KEYS
+
         local _, _, _, code = event.pull("key_down")
         if code == UP_ARROW then
             farmSize.x = farmSize.x + 1
-        elseif code == DOWN_ARROW  then
+        elseif code == DOWN_ARROW then
             farmSize.x = math.max(farmSize.x - 1, 1)
         elseif code == LEFT_ARROW then
             farmSize.z = math.max(farmSize.z - 1, 1)
@@ -112,18 +109,18 @@ local function main()
                     robot.swingDown()
                 end
                 
-                -- PLANTOWANIE (sadzi uprawę pod robotem, jeśli ma ją w ekwipunku)
+                -- SADZENIE (jeśli ma nasiona w ekwipunku)
                 if robot.count() > 0 then
                     robot.placeDown()
                 end
 
-                -- Ruch do przodu w obrębie aktualnego rzędu
+                -- Ruch do przodu w obrębie rzędu
                 if z < farmSize.z then
                     robot.forward()
                 end
             end
 
-            -- Przejście do kolejnego rzędu (zmiana kierunku w zależności od parzystości)
+            -- Przejście do kolejnego rzędu
             if x < farmSize.x then
                 if x % 2 == 1 then
                     robot.turnRight()
@@ -138,7 +135,6 @@ local function main()
         end
 
         -- 2. POWRÓT DO MIEJSCA STARTOWEGO
-        -- Algorytm dopasowuje drogę powrotną w zależności od tego, w którym rogu zakończył się cykl
         if farmSize.x % 2 == 1 then
             robot.turnRight()
             robot.turnRight()
@@ -158,22 +154,27 @@ local function main()
             robot.turnLeft()
         end
 
-        -- 3. ODDawanie PLONÓW DO SKRZYNKI NAD STARTEM
-        -- Wyrzuca przedmioty ze slotów 2-16 (zostawiając slot 1 z nasionami)
+        -- 3. ODDAWANIE PLONÓW DO SKRZYNKI (sloty 2-16, zostawiając slot 1)
         for slot = 2, 16 do
             robot.select(slot)
             if robot.count() > 0 then
                 robot.dropUp()
             end
         end
-        robot.select(1) -- Powrót do slotu z nasionami na kolejny cykl
+        robot.select(1)
     end
 
     return 1
 end
 
--- PROGRAM
-if setup() == 0 then return 0 end
+-- ==========================================
+-- PROGRAM EXECUTION
+-- ==========================================
+
+if setup() == 0 then 
+    return 0 
+end
+
 clearscreen(true)
 term.write("Rozmiar farmy: " .. farmSize.x .. "x" .. farmSize.z .. "\n")
 term.write("Rodzaj uprawy: " .. cropType .. "\n")
