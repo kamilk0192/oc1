@@ -1,6 +1,7 @@
 -- ==========================================
 -- OPENCOMPUTERS FARMING SCRIPT
 -- ==========================================
+---@diagnostic disable: need-check-nil, undefined-field
 
 -- MODULES & DEPENDENCIES
 local component = require("component")
@@ -171,8 +172,8 @@ end
 -- PROGRAM EXECUTION
 -- ==========================================
 
-if setup() == 0 then 
-    return 0 
+if setup() == 0 then
+    return 0
 end
 
 clearscreen(true)
