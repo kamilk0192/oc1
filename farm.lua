@@ -97,7 +97,7 @@ end
 
 local function main()
     local _, _, _, code = event.pull("key_down")
-    if code == BACKSPACE then 
+    if code == BACKSPACE then
         return 0
     end
 
@@ -179,12 +179,10 @@ end
 clearscreen(true)
 term.write("Rozmiar farmy: " .. farmSize.x .. "x" .. farmSize.z .. "\n")
 term.write("Rodzaj uprawy: " .. cropType .. "\n")
-term.write("Naciśnij dowolny klawisz, aby rozpocząć cykl, lub Backspace, aby wyjść.\n")
 
 -- MAIN LOOP
 while true do
     if main() ~= 1 then
         break
     end
-    term.write("Cykl zakończony. Naciśnij klawisz, aby uruchomić ponownie.\n")
 end
